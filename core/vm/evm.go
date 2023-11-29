@@ -66,8 +66,8 @@ func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
  * @return tuple of contract interface or nil, and true if it exists or false otherwise.
  */
 func (evm *EVM) statefulPrecompile(addr common.Address) (StatefulPrecompileContract, bool) {
-
-	return nil, true
+	p := StatefulPrecompileRegistry[addr]
+	return p, nil != p
 }
 
 // BlockContext provides the EVM with auxiliary information. Once provided
@@ -204,10 +204,12 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 	}
 	snapshot := evm.StateDB.Snapshot()
 	p, isPrecompile := evm.precompile(addr)
+	sp, isStatefulPrecompile := evm.statefulPrecompile(addr)
+
 	debug := evm.Config.Tracer != nil
 
 	if !evm.StateDB.Exist(addr) {
-		if !isPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
+		if !isPrecompile && !isStatefulPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
 			// Calling a non existing account, don't do anything, but ping the tracer
 			if debug {
 				if evm.depth == 0 {
@@ -242,6 +244,8 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 
 	if isPrecompile {
 		ret, gas, err = RunPrecompiledContract(p, input, gas)
+	} else if isStatefulPrecompile {
+		ret, gas, err = RunStatefulPrecompiledContract(&StatefulPrecompileContext{evm: evm}, sp, input, gas)
 	} else {
 		// Initialise a new contract and set the code that is to be used by the EVM.
 		// The contract is a scoped environment for this execution context only.

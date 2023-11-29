@@ -11,8 +11,7 @@ import "github.com/ethereum/go-ethereum/common"
  * and native extensions to the protocol.
  */
 type StatefulPrecompileContext struct {
-	blockContext *BlockContext
-	evm          *EVM
+	evm *EVM
 }
 
 /*
@@ -58,4 +57,26 @@ type StatefulPrecompileContract interface {
  */
 var StatefulPrecompileRegistry = map[common.Address]StatefulPrecompileContract{
 	common.BytesToAddress([]byte{0x13, 0x37, 0xBE, 0xEF}): &FishStore{},
+}
+
+/**
+ * RunStatefulPrecompiledContract
+ *
+ * This method is called from the evm execution flow, and combines the
+ * execution context to the contract functions. It also estimates and deducts
+ * gas costs, or will run out of gas.
+ *
+ * @param c the execution context, including access to the state
+ * @param p the interface for the precompiled contract
+ * @param input the byte string that is considered as call data
+ * @return a result, the remaining gas of the supplied gas, and any error codes
+ */
+func RunStatefulPrecompiledContract(c *StatefulPrecompileContext, p StatefulPrecompileContract, input []byte, suppliedGas uint64) (ret []byte, remainingGas uint64, err error) {
+	gasCost := p.RequiredGas(input)
+	if suppliedGas < gasCost {
+		return nil, 0, ErrOutOfGas
+	}
+	suppliedGas -= gasCost
+	output, err := p.Run(c, input)
+	return output, suppliedGas, err
 }
