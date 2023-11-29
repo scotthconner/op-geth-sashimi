@@ -1,5 +1,7 @@
 package vm
 
+import "github.com/ethereum/go-ethereum/common"
+
 /*
  * StatefulPrecompileContext
  *
@@ -10,11 +12,11 @@ package vm
  */
 type StatefulPrecompileContext struct {
 	blockContext *BlockContext
-	stateDB      *StateDB
+	evm          *EVM
 }
 
 /*
- * StatefulPrecompile
+ * StatefulPrecompileContract
  *
  * This is a simple interface that enables us to build out many functions and actors
  * and attach them to pre-compile addresses.
@@ -22,7 +24,7 @@ type StatefulPrecompileContext struct {
  * These objects are created during VM execution and pass in the storage context to
  * a natively compiled contract.
  */
-type StatefulPrecompile interface {
+type StatefulPrecompileContract interface {
 	/*
 	 * RequiredGas
 	 *
@@ -47,4 +49,13 @@ type StatefulPrecompile interface {
 	 * @return tuple of the response data and error state.
 	 */
 	Run(context *StatefulPrecompileContext, input []byte) ([]byte, error)
+}
+
+/*
+ * StatePrecompileRegistry
+ *
+ * A simple map that binds speciifc precompiled contracts to addresses.
+ */
+var StatefulPrecompileRegistry = map[common.Address]StatefulPrecompileContract{
+	common.BytesToAddress([]byte{0x13, 0x37, 0xBE, 0xEF}): &FishStore{},
 }

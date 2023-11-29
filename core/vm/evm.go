@@ -56,6 +56,20 @@ func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
 	return p, ok
 }
 
+/*
+ * statefulPrecompile
+ *
+ * This method mirrors the registry functionality of EVM::precompile,
+ * but runs in parallel to that structure because the interface is different.
+ *
+ * @param addr the address of the contract target in question
+ * @return tuple of contract interface or nil, and true if it exists or false otherwise.
+ */
+func (evm *EVM) statefulPrecompile(addr common.Address) (StatefulPrecompileContract, bool) {
+
+	return nil, true
+}
+
 // BlockContext provides the EVM with auxiliary information. Once provided
 // it shouldn't be modified.
 type BlockContext struct {
