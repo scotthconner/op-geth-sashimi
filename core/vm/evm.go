@@ -306,9 +306,11 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 		}(gas)
 	}
 
-	// It is allowed to call precompiles, even via delegatecall
+	// It is allowed to call precompiles, even via delegatecall.
 	if p, isPrecompile := evm.precompile(addr); isPrecompile {
 		ret, gas, err = RunPrecompiledContract(p, input, gas)
+	} else if sp, isStatefulPrecompile := evm.statefulPrecompile(addr); isStatefulPrecompile {
+		ret, gas, err = RunStatefulPrecompiledContract(&StatefulPrecompileContext{evm: evm}, sp, input, gas)
 	} else {
 		addrCopy := addr
 		// Initialise a new contract and set the code that is to be used by the EVM.
@@ -352,6 +354,7 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 	}
 
 	// It is allowed to call precompiles, even via delegatecall
+	// NOTE: Delegate calls make no sense for fish precompiles
 	if p, isPrecompile := evm.precompile(addr); isPrecompile {
 		ret, gas, err = RunPrecompiledContract(p, input, gas)
 	} else {
@@ -403,6 +406,8 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 
 	if p, isPrecompile := evm.precompile(addr); isPrecompile {
 		ret, gas, err = RunPrecompiledContract(p, input, gas)
+	} else if sp, isStatefulPrecompile := evm.statefulPrecompile(addr); isStatefulPrecompile {
+		ret, gas, err = RunStatefulPrecompiledContract(&StatefulPrecompileContext{evm: evm}, sp, input, gas)
 	} else {
 		// At this point, we use a copy of address. If we don't, the go compiler will
 		// leak the 'contract' to the outer scope, and make allocation for 'contract'
