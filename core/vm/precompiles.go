@@ -1,6 +1,10 @@
 package vm
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"fmt"
+
+	"github.com/ethereum/go-ethereum/common"
+)
 
 /*
  * StatefulPrecompileContext
@@ -72,9 +76,14 @@ type StatefulPrecompileContract struct {
  * @return a result, the remaining gas of the supplied gas, and any error codes
  */
 func RunStatefulPrecompiledContract(c *StatefulPrecompileContext, p *StatefulPrecompileContract, input []byte, suppliedGas uint64) (ret []byte, remainingGas uint64, err error) {
+	fmt.Println("what it dooooooooooooo: {}", input[:4])
+
 	// grab the function selector, which is the first four bytes.
 	// the contract will hold a map of function interfaces.
-	f := p.functions[common.BytesToHash(input[:3])]
+	f, ok := p.functions[common.BytesToHash(input[:4])]
+	if !ok {
+		return nil, suppliedGas, ErrExecutionReverted
+	}
 
 	// estimate and cost the gas
 	gasCost := f.RequiredGas(input[4:])

@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -32,5 +34,6 @@ func (c *CreateSlice) RequiredGas(input []byte) uint64 {
 var FishFunctionSelectors = map[string]StatefulPrecompileFunction{}
 
 func (c *CreateSlice) Run(context *StatefulPrecompileContext, input []byte) ([]byte, error) {
+	fmt.Println("CREATE SLIDE TRACE LOG: {}", input)
 	return nil, nil
 }

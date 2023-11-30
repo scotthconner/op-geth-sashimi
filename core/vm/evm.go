@@ -75,8 +75,8 @@ var StatefulPrecompileRegistry = map[common.Address]*StatefulPrecompileContract{
  * @return tuple of contract interface or nil, and true if it exists or false otherwise.
  */
 func (evm *EVM) statefulPrecompile(addr common.Address) (*StatefulPrecompileContract, bool) {
-	p := StatefulPrecompileRegistry[addr]
-	return p, nil != p
+	p, ok := StatefulPrecompileRegistry[addr]
+	return p, ok
 }
 
 // BlockContext provides the EVM with auxiliary information. Once provided
