@@ -57,6 +57,15 @@ func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
 }
 
 /*
+ * StatePrecompileRegistry
+ *
+ * A simple map that binds speciifc precompiled contracts to addresses.
+ */
+var StatefulPrecompileRegistry = map[common.Address]*StatefulPrecompileContract{
+	common.BytesToAddress([]byte{0x13, 0x37, 0xBE, 0xEF}): &FishStore,
+}
+
+/*
  * statefulPrecompile
  *
  * This method mirrors the registry functionality of EVM::precompile,
@@ -65,7 +74,7 @@ func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
  * @param addr the address of the contract target in question
  * @return tuple of contract interface or nil, and true if it exists or false otherwise.
  */
-func (evm *EVM) statefulPrecompile(addr common.Address) (StatefulPrecompileContract, bool) {
+func (evm *EVM) statefulPrecompile(addr common.Address) (*StatefulPrecompileContract, bool) {
 	p := StatefulPrecompileRegistry[addr]
 	return p, nil != p
 }

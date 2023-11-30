@@ -15,7 +15,7 @@ type StatefulPrecompileContext struct {
 }
 
 /*
- * StatefulPrecompileContract
+ * StatefulPrecompileFunction
  *
  * This is a simple interface that enables us to build out many functions and actors
  * and attach them to pre-compile addresses.
@@ -23,14 +23,14 @@ type StatefulPrecompileContext struct {
  * These objects are created during VM execution and pass in the storage context to
  * a natively compiled contract.
  */
-type StatefulPrecompileContract interface {
+type StatefulPrecompileFunction interface {
 	/*
 	 * RequiredGas
 	 *
 	 * Estimates the required gas based on the inputs.
 	 *
-	 * @param input the byte array that could include a function selector as well as raw calldata
-	 *              interpretation of these bytes is necessary to take calldata input.
+	 * @param input the call data byte array
+	 *
 	 * @return the estimated gas price in wei
 	 */
 	RequiredGas(input []byte) uint64
@@ -50,13 +50,13 @@ type StatefulPrecompileContract interface {
 	Run(context *StatefulPrecompileContext, input []byte) ([]byte, error)
 }
 
-/*
- * StatePrecompileRegistry
+/**
+ * StatefulPrecompiledContract
  *
- * A simple map that binds speciifc precompiled contracts to addresses.
+ * A structured mapping of function selectors to precompile functions
  */
-var StatefulPrecompileRegistry = map[common.Address]StatefulPrecompileContract{
-	common.BytesToAddress([]byte{0x13, 0x37, 0xBE, 0xEF}): &FishStore{},
+type StatefulPrecompileContract struct {
+	functions map[common.Hash]StatefulPrecompileFunction
 }
 
 /**
@@ -71,12 +71,19 @@ var StatefulPrecompileRegistry = map[common.Address]StatefulPrecompileContract{
  * @param input the byte string that is considered as call data
  * @return a result, the remaining gas of the supplied gas, and any error codes
  */
-func RunStatefulPrecompiledContract(c *StatefulPrecompileContext, p StatefulPrecompileContract, input []byte, suppliedGas uint64) (ret []byte, remainingGas uint64, err error) {
-	gasCost := p.RequiredGas(input)
+func RunStatefulPrecompiledContract(c *StatefulPrecompileContext, p *StatefulPrecompileContract, input []byte, suppliedGas uint64) (ret []byte, remainingGas uint64, err error) {
+	// grab the function selector, which is the first four bytes.
+	// the contract will hold a map of function interfaces.
+	f := p.functions[common.BytesToHash(input[:3])]
+
+	// estimate and cost the gas
+	gasCost := f.RequiredGas(input[4:])
 	if suppliedGas < gasCost {
 		return nil, 0, ErrOutOfGas
 	}
 	suppliedGas -= gasCost
-	output, err := p.Run(c, input)
+
+	// execute and return the response and error codes
+	output, err := f.Run(c, input[4:])
 	return output, suppliedGas, err
 }
